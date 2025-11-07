@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="config.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100">
     <div class="container mx-auto px-4 py-8 max-w-6xl">
@@ -124,7 +125,11 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000';
+        // API URL - configurable for different environments
+        // For production, set this to your deployed backend URL
+        const API_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:8000'
+            : (window.BACKEND_URL || 'https://your-backend-url.railway.app');
         let currentFile = null;
 
         // File input handling
