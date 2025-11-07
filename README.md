@@ -29,7 +29,17 @@ n8n-to-code-webapp/
 └── tests/              # Test suite
 ```
 
-## Quick Start
+## 🚀 Deploy to Vercel (Easiest!)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/flocop/n8n-to-code-webapp)
+
+**One-click deployment!** Backend + Frontend hosted together on Vercel.
+
+See [VERCEL_DEPLOY.md](VERCEL_DEPLOY.md) for detailed instructions.
+
+---
+
+## Quick Start (Local Development)
 
 ### Option 1: Docker (Recommended)
 
