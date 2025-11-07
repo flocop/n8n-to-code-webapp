@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n8n to Python Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+                n8n to Python Converter
+            </h1>
+            <p class="text-xl text-gray-400">
+                Turn your n8n workflows into production-ready Python code in seconds
+            </p>
+        </header>
+
+        <!-- Upload Section -->
+        <div class="bg-gray-800 rounded-lg shadow-xl p-8 mb-8">
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2">Upload n8n Workflow JSON</label>
+                <div class="flex items-center justify-center w-full">
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600 transition">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="mb-2 text-sm text-gray-400">
+                                <span class="font-semibold">Click to upload</span> or drag and drop
+                            </p>
+                            <p class="text-xs text-gray-500">n8n workflow JSON file</p>
+                        </div>
+                        <input id="fileInput" type="file" class="hidden" accept=".json" />
+                    </label>
+                </div>
+                <p id="fileName" class="mt-2 text-sm text-gray-400"></p>
+            </div>
+
+            <div class="flex gap-4">
+                <button id="convertBtn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Convert to Python
+                </button>
+                <button id="validateBtn" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Validate Workflow
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="hidden text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <p class="mt-4 text-gray-400">Processing workflow...</p>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error" class="hidden bg-red-900 border border-red-700 text-red-200 px-6 py-4 rounded-lg mb-8">
+            <h3 class="font-bold mb-2">Error</h3>
+            <p id="errorMessage"></p>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="hidden">
+            <!-- Info Card -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-4">Workflow Info</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-gray-400 text-sm">Workflow Name</p>
+                        <p id="workflowName" class="text-lg font-semibold">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Nodes</p>
+                        <p id="totalNodes" class="text-lg font-semibold">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Supported</p>
+                        <p id="supportedNodes" class="text-lg font-semibold text-green-400">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm">Unsupported</p>
+                        <p id="unsupportedNodes" class="text-lg font-semibold text-yellow-400">-</p>
+                    </div>
+                </div>
+                <div id="unsupportedList" class="hidden mt-4">
+                    <p class="text-yellow-400 text-sm font-semibold mb-2">⚠️ Unsupported nodes (placeholders generated):</p>
+                    <ul id="unsupportedItems" class="list-disc list-inside text-sm text-gray-400"></ul>
+                </div>
+            </div>
+
+            <!-- Code Display -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Generated Python Code</h2>
+                    <button id="copyBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                        Copy Code
+                    </button>
+                </div>
+                <div class="bg-gray-900 rounded-lg overflow-hidden">
+                    <pre><code id="pythonCode" class="language-python text-sm"></code></pre>
+                </div>
+            </div>
+
+            <!-- Requirements -->
+            <div class="bg-gray-800 rounded-lg shadow-xl p-6 mb-6">
+                <h2 class="text-2xl font-bold mb-4">Requirements.txt</h2>
+                <div class="bg-gray-900 rounded-lg p-4">
+                    <pre><code id="requirements" class="text-sm text-gray-300"></code></pre>
+                </div>
+            </div>
+
+            <!-- Download Button -->
+            <div class="text-center">
+                <button id="downloadBtn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-lg transition transform hover:scale-105">
+                    Download Python File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let currentFile = null;
+
+        // File input handling
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const convertBtn = document.getElementById('convertBtn');
+        const validateBtn = document.getElementById('validateBtn');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const results = document.getElementById('results');
+
+        fileInput.addEventListener('change', (e) => {
+            currentFile = e.target.files[0];
+            if (currentFile) {
+                fileName.textContent = `Selected: ${currentFile.name}`;
+                convertBtn.disabled = false;
+                validateBtn.disabled = false;
+            }
+        });
+
+        // Convert button
+        convertBtn.addEventListener('click', async () => {
+            if (!currentFile) return;
+
+            showLoading();
+            hideError();
+            hideResults();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', currentFile);
+
+                const response = await fetch(`${API_URL}/api/convert`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Conversion failed');
+                }
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Validate button
+        validateBtn.addEventListener('click', async () => {
+            if (!currentFile) return;
+
+            showLoading();
+            hideError();
+            hideResults();
+
+            try {
+                const formData = new FormData();
+                formData.append('file', currentFile);
+
+                const response = await fetch(`${API_URL}/api/validate`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Validation failed');
+                }
+
+                const data = await response.json();
+
+                if (data.is_valid) {
+                    alert(`✅ Workflow is valid!\n\nNodes: ${data.nodes_count}\nExecution order: ${data.execution_order.join(' → ')}`);
+                } else {
+                    alert(`❌ Workflow has errors:\n\n${data.errors.join('\n')}`);
+                }
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Copy button
+        document.getElementById('copyBtn').addEventListener('click', () => {
+            const code = document.getElementById('pythonCode').textContent;
+            navigator.clipboard.writeText(code);
+            alert('Code copied to clipboard!');
+        });
+
+        // Download button
+        document.getElementById('downloadBtn').addEventListener('click', async () => {
+            if (!currentFile) return;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', currentFile);
+
+                const response = await fetch(`${API_URL}/api/convert/download`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Download failed');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'workflow.py';
+                a.click();
+                window.URL.revokeObjectURL(url);
+
+            } catch (err) {
+                showError(err.message);
+            }
+        });
+
+        // Display functions
+        function displayResults(data) {
+            document.getElementById('workflowName').textContent = data.workflow_name;
+            document.getElementById('totalNodes').textContent = data.nodes_count;
+            document.getElementById('supportedNodes').textContent = data.supported_nodes;
+            document.getElementById('unsupportedNodes').textContent = data.unsupported_nodes.length;
+
+            if (data.unsupported_nodes.length > 0) {
+                const list = document.getElementById('unsupportedItems');
+                list.innerHTML = '';
+                data.unsupported_nodes.forEach(node => {
+                    const li = document.createElement('li');
+                    li.textContent = node;
+                    list.appendChild(li);
+                });
+                document.getElementById('unsupportedList').classList.remove('hidden');
+            }
+
+            document.getElementById('pythonCode').textContent = data.python_code;
+            document.getElementById('requirements').textContent = data.requirements;
+
+            hljs.highlightAll();
+
+            results.classList.remove('hidden');
+        }
+
+        function showLoading() {
+            loading.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loading.classList.add('hidden');
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            error.classList.remove('hidden');
+        }
+
+        function hideError() {
+            error.classList.add('hidden');
+        }
+
+        function hideResults() {
+            results.classList.add('hidden');
+        }
+
+        // Initialize
+        convertBtn.disabled = true;
+        validateBtn.disabled = true;
+    </script>
+</body>
+</html>
